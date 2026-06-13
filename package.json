@@ -4,6 +4,23 @@
   "description": "MCP server exposing Proxmox VE management as tools over stdio",
   "type": "module",
   "license": "MIT",
+  "author": "Karol Krawczyk",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "proxmox",
+    "proxmox-ve",
+    "claude",
+    "virtualization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/k-krawczyk/proxmox-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/k-krawczyk/proxmox-mcp-server/issues"
+  },
+  "homepage": "https://github.com/k-krawczyk/proxmox-mcp-server#readme",
   "bin": {
     "proxmox-mcp-server": "dist/index.js"
   },
@@ -42,6 +59,7 @@
     "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
+    "globals": "^17.6.0",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",

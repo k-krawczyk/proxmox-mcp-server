@@ -8,13 +8,19 @@ import { registerAllTools } from '../dist/tools/index.js';
 // without a NIC because the lab node has no bridge, and disks are qcow2 so the
 // VM snapshot path works on the dir storage.
 
-const N = 'pve-lab-01';
-const STORAGE = 'local';
-const TEMPLATE = 'local:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz';
-const VM = 9000;
-const VM_CLONE = 9001;
-const CT = 9100;
-const CT_CLONE = 9101;
+// Configurable so the test is not tied to one lab. Defaults match a fresh
+// single-node install with only the `local` storage.
+const N = process.env.PVE_TEST_NODE ?? 'pve';
+const STORAGE = process.env.PVE_TEST_STORAGE ?? 'local';
+const TEMPLATE =
+  process.env.PVE_TEST_TEMPLATE ?? `${STORAGE}:vztmpl/alpine-3.22-default_20250617_amd64.tar.xz`;
+const DOWNLOAD_URL =
+  process.env.PVE_TEST_DOWNLOAD_URL ??
+  'http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz';
+const VM = Number(process.env.PVE_TEST_VMID ?? 9000);
+const VM_CLONE = VM + 1;
+const CT = Number(process.env.PVE_TEST_CTID ?? 9100);
+const CT_CLONE = CT + 1;
 
 const tools = new Map();
 const server = { registerTool: (name, _cfg, cb) => tools.set(name, cb) };
@@ -67,61 +73,111 @@ async function step(title, fn) {
 
 try {
   await step('cluster and node reads', async () => {
-    await ok('pve_list_nodes', {}, (d) => (d.some((n) => n.node === N) ? null : `node ${N} not listed`));
+    await ok('pve_list_nodes', {}, (d) =>
+      d.some((n) => n.node === N) ? null : `node ${N} not listed`,
+    );
     await ok('pve_node_status', { node: N }, (d) => (d.pveversion ? null : 'no pveversion'));
     await ok('pve_cluster_resources', {});
     await ok('pve_list_tasks', { node: N });
-    await ok('pve_list_storage', { node: N }, (d) => (d.some((s) => s.storage === STORAGE) ? null : 'no local storage'));
+    await ok('pve_list_storage', { node: N }, (d) =>
+      d.some((s) => s.storage === STORAGE) ? null : 'no local storage',
+    );
     await ok('pve_storage_content', { node: N, storage: STORAGE, content: 'vztmpl' }, (d) =>
       d.some((c) => c.volid === TEMPLATE) ? null : 'alpine template not found',
     );
-    await ok('pve_list_network', { node: N }, (d) => (d.some((i) => i.iface === 'eth0') ? null : 'no eth0'));
+    await ok('pve_list_network', { node: N }, (d) =>
+      d.some((i) => i.iface === 'eth0') ? null : 'no eth0',
+    );
   });
 
   await step('image download tool', async () => {
-    await ok('pve_download_iso', {
-      node: N,
-      storage: STORAGE,
-      url: 'http://download.proxmox.com/images/system/alpine-3.22-default_20250617_amd64.tar.xz',
-      filename: 'alpine-tooltest.tar.xz',
-      content: 'vztmpl',
-    }, (d) => (d.exitStatus === 'OK' ? null : 'download task not OK'));
+    await ok(
+      'pve_download_iso',
+      {
+        node: N,
+        storage: STORAGE,
+        url: DOWNLOAD_URL,
+        filename: 'alpine-tooltest.tar.xz',
+        content: 'vztmpl',
+      },
+      (d) => (d.exitStatus === 'OK' ? null : 'download task not OK'),
+    );
     await ok('pve_storage_content', { node: N, storage: STORAGE, content: 'vztmpl' }, (d) =>
       d.some((c) => c.volid.endsWith('alpine-tooltest.tar.xz')) ? null : 'downloaded file missing',
     );
   });
 
   await step('VM create, inspect, lifecycle', async () => {
-    await ok('pve_vm_create', {
-      node: N,
-      vmid: VM,
-      name: 'mcp-e2e-vm',
-      cores: 1,
-      memory: 512,
-      ostype: 'l26',
-      extra: { scsi0: `${STORAGE}:1,format=qcow2` },
-    }, (d) => (d.exitStatus === 'OK' ? null : 'create not OK'));
-    await ok('pve_vm_status', { node: N, vmid: VM }, (d) => (d.status === 'stopped' ? null : 'new VM not stopped'));
-    await ok('pve_vm_config', { node: N, vmid: VM }, (d) => (d.scsi0 ? null : 'disk missing in config'));
+    await ok(
+      'pve_vm_create',
+      {
+        node: N,
+        vmid: VM,
+        name: 'mcp-e2e-vm',
+        cores: 1,
+        memory: 512,
+        ostype: 'l26',
+        extra: { scsi0: `${STORAGE}:1,format=qcow2` },
+      },
+      (d) => (d.exitStatus === 'OK' ? null : 'create not OK'),
+    );
+    await ok('pve_vm_status', { node: N, vmid: VM }, (d) =>
+      d.status === 'stopped' ? null : 'new VM not stopped',
+    );
+    await ok('pve_vm_config', { node: N, vmid: VM }, (d) =>
+      d.scsi0 ? null : 'disk missing in config',
+    );
     await ok('pve_vm_start', { node: N, vmid: VM });
-    await ok('pve_vm_status', { node: N, vmid: VM }, (d) => (d.status === 'running' ? null : 'VM not running'));
+    await ok('pve_vm_status', { node: N, vmid: VM }, (d) =>
+      d.status === 'running' ? null : 'VM not running',
+    );
     await ok('pve_vm_set_config', { node: N, vmid: VM, memory: 1024 });
-    await ok('pve_vm_config', { node: N, vmid: VM }, (d) => (Number(d.memory) === 1024 ? null : 'memory not updated'));
+    await ok('pve_vm_config', { node: N, vmid: VM }, (d) =>
+      Number(d.memory) === 1024 ? null : 'memory not updated',
+    );
   });
 
   await step('VM snapshots', async () => {
-    await ok('pve_snapshot_create', { node: N, vmid: VM, type: 'qemu', snapname: 'base', description: 'e2e' });
+    await ok('pve_snapshot_create', {
+      node: N,
+      vmid: VM,
+      type: 'qemu',
+      snapname: 'base',
+      description: 'e2e',
+    });
     await ok('pve_list_snapshots', { node: N, vmid: VM, type: 'qemu' }, (d) =>
       d.some((s) => s.name === 'base') ? null : 'snapshot not listed',
     );
-    await ok('pve_snapshot_rollback', { node: N, vmid: VM, type: 'qemu', snapname: 'base', confirm: true, confirmName: 'base' });
-    await ok('pve_snapshot_delete', { node: N, vmid: VM, type: 'qemu', snapname: 'base', confirm: true, confirmName: 'base' });
+    await ok('pve_snapshot_rollback', {
+      node: N,
+      vmid: VM,
+      type: 'qemu',
+      snapname: 'base',
+      confirm: true,
+      confirmName: 'base',
+    });
+    await ok('pve_snapshot_delete', {
+      node: N,
+      vmid: VM,
+      type: 'qemu',
+      snapname: 'base',
+      confirm: true,
+      confirmName: 'base',
+    });
   });
 
   await step('VM clone and migrate', async () => {
     await ok('pve_vm_stop', { node: N, vmid: VM, confirm: true });
-    await ok('pve_vm_clone', { node: N, vmid: VM, newid: VM_CLONE, name: 'mcp-e2e-clone', full: true });
-    await ok('pve_list_vms', { node: N }, (d) => (d.some((v) => v.vmid === VM_CLONE) ? null : 'clone missing'));
+    await ok('pve_vm_clone', {
+      node: N,
+      vmid: VM,
+      newid: VM_CLONE,
+      name: 'mcp-e2e-clone',
+      full: true,
+    });
+    await ok('pve_list_vms', { node: N }, (d) =>
+      d.some((v) => v.vmid === VM_CLONE) ? null : 'clone missing',
+    );
     // Standalone node: a migration to itself is correctly refused by PVE. This
     // verifies the request is built right and the 400 is mapped to a clear message.
     await rejects('pve_vm_migrate', { node: N, vmid: VM_CLONE, target: N }, 'local node');
@@ -129,52 +185,101 @@ try {
 
   let archive;
   await step('VM backup, delete, restore', async () => {
-    await ok('pve_backup_now', { node: N, vmid: VM, storage: STORAGE, mode: 'snapshot', compress: 'zstd' });
+    await ok('pve_backup_now', {
+      node: N,
+      vmid: VM,
+      storage: STORAGE,
+      mode: 'snapshot',
+      compress: 'zstd',
+    });
     const backups = await ok('pve_list_backups', { node: N, storage: STORAGE }, (d) =>
       d.some((b) => b.vmid === VM) ? null : 'backup not listed',
     );
     archive = backups.find((b) => b.vmid === VM).volid;
     await ok('pve_vm_delete', { node: N, vmid: VM, confirm: true, confirmVmid: VM });
-    await ok('pve_restore', { node: N, vmid: VM, type: 'qemu', archive, storage: STORAGE, confirm: true, confirmVmid: VM });
-    await ok('pve_vm_status', { node: N, vmid: VM }, (d) => (d.vmid === VM ? null : 'restore failed'));
+    await ok('pve_restore', {
+      node: N,
+      vmid: VM,
+      type: 'qemu',
+      archive,
+      storage: STORAGE,
+      confirm: true,
+      confirmVmid: VM,
+    });
+    await ok('pve_vm_status', { node: N, vmid: VM }, (d) =>
+      d.vmid === VM ? null : 'restore failed',
+    );
   });
 
   await step('LXC full cycle', async () => {
     await ok('pve_list_containers', { node: N });
-    await ok('pve_lxc_create', {
-      node: N,
-      vmid: CT,
-      ostemplate: TEMPLATE,
-      hostname: 'mcp-e2e-ct',
-      cores: 1,
-      memory: 256,
-      swap: 0,
-      rootfs: { storage: STORAGE, sizeGb: 1 },
-      unprivileged: true,
-    }, (d) => (d.exitStatus === 'OK' ? null : 'lxc create not OK'));
-    await ok('pve_lxc_status', { node: N, vmid: CT }, (d) => (d.vmid === CT ? null : 'container missing'));
+    await ok(
+      'pve_lxc_create',
+      {
+        node: N,
+        vmid: CT,
+        ostemplate: TEMPLATE,
+        hostname: 'mcp-e2e-ct',
+        cores: 1,
+        memory: 256,
+        swap: 0,
+        rootfs: { storage: STORAGE, sizeGb: 1 },
+        unprivileged: true,
+      },
+      (d) => (d.exitStatus === 'OK' ? null : 'lxc create not OK'),
+    );
+    await ok('pve_lxc_status', { node: N, vmid: CT }, (d) =>
+      d.vmid === CT ? null : 'container missing',
+    );
     await ok('pve_lxc_config', { node: N, vmid: CT });
     await ok('pve_lxc_start', { node: N, vmid: CT });
-    await ok('pve_lxc_status', { node: N, vmid: CT }, (d) => (d.status === 'running' ? null : 'CT not running'));
+    await ok('pve_lxc_status', { node: N, vmid: CT }, (d) =>
+      d.status === 'running' ? null : 'CT not running',
+    );
     await ok('pve_lxc_stop', { node: N, vmid: CT, confirm: true });
     await ok('pve_lxc_clone', { node: N, vmid: CT, newid: CT_CLONE, hostname: 'mcp-e2e-ct-clone' });
-    await ok('pve_list_containers', { node: N }, (d) => (d.some((c) => c.vmid === CT_CLONE) ? null : 'CT clone missing'));
+    await ok('pve_list_containers', { node: N }, (d) =>
+      d.some((c) => c.vmid === CT_CLONE) ? null : 'CT clone missing',
+    );
   });
 
   await step('network (pending bridge, no apply)', async () => {
-    await ok('pve_create_bridge', { node: N, iface: 'vmbr1', autostart: true, cidr: '10.99.99.1/24' });
-    await ok('pve_list_network', { node: N }, (d) => (d.some((i) => i.iface === 'vmbr1') ? null : 'vmbr1 not staged'));
-    process.stdout.write('  SKIP pve_apply_network (would reload networking on the live remote node)\n');
+    await ok('pve_create_bridge', {
+      node: N,
+      iface: 'vmbr1',
+      autostart: true,
+      cidr: '10.99.99.1/24',
+    });
+    await ok('pve_list_network', { node: N }, (d) =>
+      d.some((i) => i.iface === 'vmbr1') ? null : 'vmbr1 not staged',
+    );
+    process.stdout.write(
+      '  SKIP pve_apply_network (would reload networking on the live remote node)\n',
+    );
   });
 
   await step('scheduled backup job', async () => {
-    await ok('pve_schedule_backup', { schedule: 'sat 02:00', storage: STORAGE, all: true, mode: 'snapshot', compress: 'zstd' });
+    await ok('pve_schedule_backup', {
+      schedule: 'sat 02:00',
+      storage: STORAGE,
+      all: true,
+      mode: 'snapshot',
+      compress: 'zstd',
+    });
   });
 
   await step('safety gates (must reject)', async () => {
     await rejects('pve_vm_delete', { node: N, vmid: VM, confirmVmid: VM }, 'confirm=true');
-    await rejects('pve_vm_delete', { node: N, vmid: VM, confirm: true, confirmVmid: 1 }, 'mismatch');
-    await rejects('pve_snapshot_rollback', { node: N, vmid: VM, type: 'qemu', snapname: 'x', confirmName: 'x' }, 'confirm=true');
+    await rejects(
+      'pve_vm_delete',
+      { node: N, vmid: VM, confirm: true, confirmVmid: 1 },
+      'mismatch',
+    );
+    await rejects(
+      'pve_snapshot_rollback',
+      { node: N, vmid: VM, type: 'qemu', snapname: 'x', confirmName: 'x' },
+      'confirm=true',
+    );
   });
 
   await step('error mapping (bad token)', async () => {
@@ -183,7 +288,8 @@ try {
       await bad.get('/nodes');
       throw new Error('expected auth failure');
     } catch (err) {
-      if (!/authentication failed|401/i.test(err.message)) throw new Error(`unexpected: ${err.message}`);
+      if (!/authentication failed|401/i.test(err.message))
+        throw new Error(`unexpected: ${err.message}`);
       pass += 1;
       process.stdout.write('  PASS bad token mapped to actionable message\n');
     }
@@ -215,18 +321,28 @@ try {
     ['lxc', CT_CLONE],
   ]) {
     await quiet(`removed ${kind} ${id}`, async () =>
-      settle(await client.delete(`/nodes/${N}/${kind}/${id}`, { params: { purge: true, 'destroy-unreferenced-disks': true } })),
+      settle(
+        await client.delete(`/nodes/${N}/${kind}/${id}`, {
+          params: { purge: true, 'destroy-unreferenced-disks': true },
+        }),
+      ),
     );
   }
 
   await quiet('reverted pending network', () => client.delete(`/nodes/${N}/network`));
   await quiet('removed downloaded test template', () =>
-    client.delete(`/nodes/${N}/storage/${STORAGE}/content/${encodeURIComponent(`${STORAGE}:vztmpl/alpine-tooltest.tar.xz`)}`),
+    client.delete(
+      `/nodes/${N}/storage/${STORAGE}/content/${encodeURIComponent(`${STORAGE}:vztmpl/alpine-tooltest.tar.xz`)}`,
+    ),
   );
   await quiet('removed backup archives', async () => {
-    const items = await client.get(`/nodes/${N}/storage/${STORAGE}/content`, { params: { content: 'backup' } });
+    const items = await client.get(`/nodes/${N}/storage/${STORAGE}/content`, {
+      params: { content: 'backup' },
+    });
     for (const it of items.filter((i) => i.vmid === VM)) {
-      await client.delete(`/nodes/${N}/storage/${STORAGE}/content/${encodeURIComponent(it.volid)}`).catch(() => {});
+      await client
+        .delete(`/nodes/${N}/storage/${STORAGE}/content/${encodeURIComponent(it.volid)}`)
+        .catch(() => {});
     }
   });
   await quiet('removed schedule jobs', async () => {
