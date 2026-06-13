@@ -129,6 +129,115 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 During development you can run from source with `npm run dev`.
 
+## Adding to MCP clients
+
+The server is a local stdio process: any MCP client launches it as
+`node /absolute/path/to/dist/index.js` with the `PROXMOX_*` variables in its
+environment. Build first (`npm run build`) and use the absolute path to
+`dist/index.js`. The examples below start in read-only mode; drop `PVE_READONLY`
+or set it to `false` to enable write tools.
+
+Keep the token secret out of version control. For shared/committed config files
+(project-scoped `.mcp.json`, `.vscode/mcp.json`) prefer `${PROXMOX_TOKEN_SECRET}`
+expansion and export the value in your shell, rather than pasting the secret.
+
+### Claude Code (CLI)
+
+```
+claude mcp add --transport stdio \
+  --env PROXMOX_HOST=https://pve.local:8006 \
+  --env PROXMOX_TOKEN_ID='mcp@pve!mcp' \
+  --env PROXMOX_TOKEN_SECRET=your-secret \
+  --env PVE_READONLY=true \
+  proxmox -- node /absolute/path/to/dist/index.js
+```
+
+Place an option (here `--transport`) between the last `--env` and the server name,
+otherwise the name is parsed as another env pair. Use `--scope user` to make it
+available in every project, or `--scope project` to write a shared `.mcp.json` at
+the repo root. Manage with `claude mcp list`, `claude mcp get proxmox`,
+`claude mcp remove proxmox`, and `/mcp` inside a session.
+
+A project `.mcp.json` looks like:
+
+```json
+{
+  "mcpServers": {
+    "proxmox": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/dist/index.js"],
+      "env": {
+        "PROXMOX_HOST": "https://pve.local:8006",
+        "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
+        "PROXMOX_TOKEN_SECRET": "${PROXMOX_TOKEN_SECRET}",
+        "PVE_READONLY": "true"
+      }
+    }
+  }
+}
+```
+
+### Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.proxmox]
+command = "node"
+args = ["/absolute/path/to/dist/index.js"]
+env = { PROXMOX_HOST = "https://pve.local:8006", PROXMOX_TOKEN_ID = "mcp@pve!mcp", PROXMOX_TOKEN_SECRET = "your-secret", PVE_READONLY = "true" }
+```
+
+### Cursor
+
+`~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project), same shape as the
+Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "proxmox": {
+      "command": "node",
+      "args": ["/absolute/path/to/dist/index.js"],
+      "env": {
+        "PROXMOX_HOST": "https://pve.local:8006",
+        "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
+        "PROXMOX_TOKEN_SECRET": "your-secret",
+        "PVE_READONLY": "true"
+      }
+    }
+  }
+}
+```
+
+### VS Code
+
+`.vscode/mcp.json` (note the top-level key is `servers`):
+
+```json
+{
+  "servers": {
+    "proxmox": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/dist/index.js"],
+      "env": {
+        "PROXMOX_HOST": "https://pve.local:8006",
+        "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
+        "PROXMOX_TOKEN_SECRET": "${env:PROXMOX_TOKEN_SECRET}",
+        "PVE_READONLY": "true"
+      }
+    }
+  }
+}
+```
+
+### Other clients (Windsurf, Cline, Zed, …)
+
+These read the same `mcpServers` JSON object as Claude Desktop and Cursor. Point the
+`command`/`args`/`env` at `node /absolute/path/to/dist/index.js`.
+
 ## Tools
 
 Read tools are always registered. Tools marked write are only registered when
