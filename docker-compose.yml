@@ -1,0 +1,9 @@
+services:
+  proxmox-sim:
+    build: ./sim
+    container_name: proxmox-sim
+    ports:
+      - '8006:8006'
+    environment:
+      SIM_TOKEN_ID: 'root@pam!sim'
+      SIM_TOKEN_SECRET: 'sim-secret'

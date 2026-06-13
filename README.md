@@ -207,3 +207,32 @@ smoke test runs only when `PVE_INTEGRATION=1` is set together with valid
 ```
 PVE_INTEGRATION=1 npm test
 ```
+
+### End-to-end sweep against a simulator
+
+`sim/` contains a small in-memory simulator of the Proxmox API. It is faithful to
+the request/response contract (token auth, the `{data:...}` envelope, UPID task ids
+and the task status lifecycle) and keeps state, so every tool can be exercised end
+to end — the full create → start → snapshot → clone → backup → delete → restore
+cycle for VMs and containers — without a hypervisor. It does not emulate
+virtualization; it proves the tool/client/polling/guard code paths.
+
+Run the sweep against the simulator started with Node:
+
+```
+npm run build
+npm run sim          # in one terminal
+npm run sweep        # in another
+```
+
+Or run the simulator in a container and sweep against it:
+
+```
+npm run sweep:docker
+```
+
+This requires a running Docker engine. Building the real Proxmox VE inside Docker is
+not supported here: it is a hypervisor and needs `/dev/kvm` and the host LXC stack,
+which a container (especially on macOS, where Docker itself runs in a VM without
+nested virtualization) cannot provide. For real lifecycle testing point
+`PVE_INTEGRATION=1` at an actual node instead.

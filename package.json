@@ -24,7 +24,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sim": "node sim/proxmox-sim.mjs",
+    "sweep": "PROXMOX_HOST=http://127.0.0.1:8006 PROXMOX_TOKEN_ID='root@pam!sim' PROXMOX_TOKEN_SECRET=sim-secret PVE_READONLY=false node sim/sweep.mjs",
+    "sweep:docker": "docker compose up -d --build && node sim/wait-and-sweep.mjs; docker compose down"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
