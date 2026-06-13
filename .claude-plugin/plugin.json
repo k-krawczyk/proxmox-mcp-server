@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "proxmox-mcp",
+  "description": "Manage Proxmox VE (VMs, containers, snapshots, storage, backups) from Claude over MCP.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Karol Krawczyk",
+    "url": "https://github.com/k-krawczyk"
+  },
+  "homepage": "https://github.com/k-krawczyk/proxmox-mcp-server#readme",
+  "repository": "https://github.com/k-krawczyk/proxmox-mcp-server",
+  "license": "MIT",
+  "keywords": ["proxmox", "proxmox-ve", "mcp", "virtualization", "infrastructure"],
+  "mcpServers": {
+    "proxmox": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
+      "env": {
+        "PROXMOX_HOST": "${PROXMOX_HOST}",
+        "PROXMOX_TOKEN_ID": "${PROXMOX_TOKEN_ID}",
+        "PROXMOX_TOKEN_SECRET": "${PROXMOX_TOKEN_SECRET}",
+        "PROXMOX_INSECURE_TLS": "${PROXMOX_INSECURE_TLS:-false}",
+        "PVE_READONLY": "${PVE_READONLY:-true}"
+      }
+    }
+  }
+}

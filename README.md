@@ -129,6 +129,36 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 During development you can run from source with `npm run dev`.
 
+## Install as a Claude Code plugin
+
+This repo doubles as a Claude Code plugin and its own marketplace, so it can be
+installed in two commands. From inside Claude Code:
+
+```
+/plugin marketplace add k-krawczyk/proxmox-mcp-server
+/plugin install proxmox-mcp@proxmox
+```
+
+(The non-interactive equivalents are `claude plugin marketplace add
+k-krawczyk/proxmox-mcp-server` and `claude plugin install proxmox-mcp@proxmox`.)
+
+Installing the plugin registers the `proxmox` MCP server automatically — it runs the
+prebuilt `dist/` that ships in the repo, so no build step is needed on install. The
+plugin reads the connection details from your environment instead of storing them, so
+export them before launching Claude Code:
+
+```bash
+export PROXMOX_HOST=https://pve.local:8006
+export PROXMOX_TOKEN_ID='mcp@pve!mcp'
+export PROXMOX_TOKEN_SECRET=your-secret
+export PVE_READONLY=true            # optional, defaults to true
+export PROXMOX_INSECURE_TLS=false   # optional, defaults to false
+```
+
+When changing the source, rebuild and commit `dist/` (`npm run build`) — marketplace
+installs do not run a build. The sections below cover wiring the server into other
+clients by hand.
+
 ## Adding to MCP clients
 
 The server is a local stdio process: any MCP client launches it as

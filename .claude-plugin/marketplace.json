@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "proxmox",
+  "owner": {
+    "name": "Karol Krawczyk",
+    "url": "https://github.com/k-krawczyk"
+  },
+  "description": "Proxmox VE management tools for Claude over MCP.",
+  "plugins": [
+    {
+      "name": "proxmox-mcp",
+      "source": "./",
+      "description": "Manage Proxmox VE (VMs, containers, snapshots, storage, backups) from Claude.",
+      "license": "MIT",
+      "keywords": ["proxmox", "mcp", "virtualization"],
+      "category": "infrastructure"
+    }
+  ]
+}
