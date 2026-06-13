@@ -236,3 +236,22 @@ not supported here: it is a hypervisor and needs `/dev/kvm` and the host LXC sta
 which a container (especially on macOS, where Docker itself runs in a VM without
 nested virtualization) cannot provide. For real lifecycle testing point
 `PVE_INTEGRATION=1` at an actual node instead.
+
+### End-to-end sweep against a real node
+
+`sim/live-real.mjs` runs the same kind of sweep against an actual Proxmox node: it
+creates a VM (qcow2 disk) and an LXC container in a free VMID range and drives the
+full create → start → snapshot → clone → backup → delete → restore cycle, then
+cleans up every guest, the pending bridge, the downloaded template, backup archives
+and schedule jobs — even on failure. It deliberately skips `pve_apply_network`
+(reloading networking on a remote node can drop the connection) and treats a
+migration to the only node as the expected rejection. Point a `.env` at the node and:
+
+```
+npm run build
+set -a; . ./.env; set +a   # load PROXMOX_* into the environment
+npm run test:live
+```
+
+Guests use no NIC unless the node has a bridge, so a single-storage node with only
+`local` and no `vmbr0` is enough.
