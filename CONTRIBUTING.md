@@ -29,7 +29,7 @@ Use `npm run format` to apply Prettier and `npm run test:watch` while iterating.
 
 - TypeScript in strict mode; the linter and formatter are the source of truth.
 - Match the surrounding code: naming, import order, async/await, file layout.
-- Comment *why*, not *what*, and only where the intent is not obvious from the code
+- Comment _why_, not _what_, and only where the intent is not obvious from the code
   (for example a Proxmox API quirk). No banner comments, no restating the function
   name, no emoji.
 - Keep abstractions proportional to the problem. Don't add layers for one caller.
