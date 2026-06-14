@@ -6,3 +6,5 @@ coverage
 .DS_Store
 .claude
 plan-mcp-proxmox.md
+build
+*.mcpb

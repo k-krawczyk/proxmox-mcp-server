@@ -1,0 +1,68 @@
+{
+  "manifest_version": "0.2",
+  "name": "proxmox-mcp-server",
+  "display_name": "Proxmox VE",
+  "version": "0.1.0",
+  "description": "Manage Proxmox VE (VMs, containers, snapshots, storage, backups) over MCP.",
+  "author": {
+    "name": "Karol Krawczyk",
+    "url": "https://github.com/k-krawczyk"
+  },
+  "homepage": "https://github.com/k-krawczyk/proxmox-mcp-server",
+  "documentation": "https://github.com/k-krawczyk/proxmox-mcp-server#readme",
+  "license": "MIT",
+  "keywords": ["proxmox", "proxmox-ve", "mcp", "virtualization"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "PROXMOX_HOST": "${user_config.proxmox_host}",
+        "PROXMOX_TOKEN_ID": "${user_config.proxmox_token_id}",
+        "PROXMOX_TOKEN_SECRET": "${user_config.proxmox_token_secret}",
+        "PROXMOX_INSECURE_TLS": "${user_config.proxmox_insecure_tls}",
+        "PVE_READONLY": "${user_config.pve_readonly}"
+      }
+    }
+  },
+  "user_config": {
+    "proxmox_host": {
+      "type": "string",
+      "title": "Proxmox host URL",
+      "description": "Full base URL including port, e.g. https://pve.local:8006",
+      "required": true
+    },
+    "proxmox_token_id": {
+      "type": "string",
+      "title": "API token id",
+      "description": "In the form USER@REALM!TOKENID, e.g. mcp@pve!mcp",
+      "required": true
+    },
+    "proxmox_token_secret": {
+      "type": "string",
+      "title": "API token secret",
+      "description": "The token UUID shown once when the token is created",
+      "required": true,
+      "sensitive": true
+    },
+    "proxmox_insecure_tls": {
+      "type": "boolean",
+      "title": "Accept self-signed TLS certificates",
+      "description": "Only for labs with a self-signed certificate",
+      "default": false
+    },
+    "pve_readonly": {
+      "type": "boolean",
+      "title": "Read-only mode",
+      "description": "When on, only read tools are registered (no writes or deletes)",
+      "default": true
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=20"
+    }
+  }
+}

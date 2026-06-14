@@ -46,7 +46,8 @@
     "sim": "node sim/proxmox-sim.mjs",
     "sweep": "PROXMOX_HOST=http://127.0.0.1:8006 PROXMOX_TOKEN_ID='root@pam!sim' PROXMOX_TOKEN_SECRET=sim-secret PVE_READONLY=false node sim/sweep.mjs",
     "sweep:docker": "docker compose up -d --build && node sim/wait-and-sweep.mjs; docker compose down",
-    "test:live": "node sim/live-real.mjs"
+    "test:live": "node sim/live-real.mjs",
+    "bundle:mcpb": "bash scripts/build-mcpb.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

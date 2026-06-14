@@ -159,6 +159,14 @@ When changing the source, rebuild and commit `dist/` (`npm run build`) — marke
 installs do not run a build. The sections below cover wiring the server into other
 clients by hand.
 
+## Claude Desktop extension (.mcpb)
+
+Claude Desktop installs this as a one-click extension. Download
+`proxmox-mcp-server.mcpb` from the GitHub Releases page and drag it onto the Claude
+Desktop window (Settings → Extensions). Claude Desktop asks for the host, token id and
+token secret in a form — no config file to edit, and the secret is stored in the OS
+keychain. Build the bundle yourself with `npm run bundle:mcpb`.
+
 ## Adding to MCP clients
 
 The server is a local stdio process: any MCP client launches it as
