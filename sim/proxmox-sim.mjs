@@ -108,6 +108,7 @@ function guest(kind, vmid) {
 }
 
 const routes = [
+  ['GET', /^\/version$/, () => ({ version: '8.2.0', release: '8.2', repoid: 'sim00000' })],
   [
     'GET',
     /^\/nodes$/,

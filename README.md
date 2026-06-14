@@ -295,9 +295,14 @@ delete/restore/rollback require echoing the target id or name.
 
 Cluster and nodes:
 
+- `pve_version` — Proxmox VE version of the connected node
 - `pve_list_nodes`, `pve_node_status`
 - `pve_cluster_resources` — VMs, containers, storage and nodes in one view
 - `pve_list_tasks` — recent tasks on a node, with UPID and exit status
+
+The server logs the detected PVE version on startup. `pve_download_iso` needs the
+`download-url` endpoint and is gated to Proxmox VE 7.2+ (older nodes get a clear
+message); everything else works on 7.0, and most of it back to 6.2.
 
 VMs (QEMU):
 

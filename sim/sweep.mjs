@@ -64,6 +64,9 @@ const CT = 9100;
 const CT_CLONE = 9101;
 
 await step('cluster and node reads', async () => {
+  await ok('pve_version', {}, (d) =>
+    d.major === 8 && d.minor === 2 ? null : 'unexpected version',
+  );
   await ok('pve_list_nodes', {}, (d) =>
     Array.isArray(d) && d[0]?.node === N ? null : 'expected node pve',
   );
