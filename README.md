@@ -1,5 +1,8 @@
 # proxmox-mcp-server
 
+[![npm](https://img.shields.io/npm/v/proxmox-mcp-server)](https://www.npmjs.com/package/proxmox-mcp-server)
+[![CI](https://github.com/k-krawczyk/proxmox-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/k-krawczyk/proxmox-mcp-server/actions/workflows/ci.yml)
+
 An MCP server that exposes a Proxmox VE cluster as tools for an MCP client such as
 Claude. It talks to the Proxmox REST API (`/api2/json`) with an API token and
 communicates with the client over stdio.
@@ -169,15 +172,24 @@ keychain. Build the bundle yourself with `npm run bundle:mcpb`.
 
 ## Adding to MCP clients
 
-The server is a local stdio process: any MCP client launches it as
-`node /absolute/path/to/dist/index.js` with the `PROXMOX_*` variables in its
-environment. Build first (`npm run build`) and use the absolute path to
-`dist/index.js`. The examples below start in read-only mode; drop `PVE_READONLY`
-or set it to `false` to enable write tools.
+The package is on npm, so every client runs it the same way with no clone or build:
 
-Keep the token secret out of version control. For shared/committed config files
-(project-scoped `.mcp.json`, `.vscode/mcp.json`) prefer `${PROXMOX_TOKEN_SECRET}`
-expansion and export the value in your shell, rather than pasting the secret.
+```
+npx -y proxmox-mcp-server
+```
+
+Each client just needs that command plus the `PROXMOX_*` variables. The examples
+start in read-only mode; set `PVE_READONLY=false` to enable write tools. Keep the
+token secret out of version control — for shared/committed config files prefer
+`${PROXMOX_TOKEN_SECRET}` expansion and export the value in your shell.
+
+One-click install:
+
+[![Add to Cursor](https://img.shields.io/badge/Add%20to-Cursor-000?logo=cursor)](cursor://anysphere.cursor-deeplink/mcp/install?name=proxmox&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsInByb3htb3gtbWNwLXNlcnZlciJdfQ==)
+[![Install in VS Code](https://img.shields.io/badge/Install%20in-VS%20Code-007ACC?logo=visualstudiocode)](https://vscode.dev/redirect/mcp/install?name=proxmox&config=%7B%22name%22%3A%22proxmox%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22proxmox-mcp-server%22%5D%7D)
+
+The buttons register the server only; add your `PROXMOX_*` environment afterwards in
+the client's MCP settings.
 
 ### Claude Code (CLI)
 
@@ -187,7 +199,7 @@ claude mcp add --transport stdio \
   --env PROXMOX_TOKEN_ID='mcp@pve!mcp' \
   --env PROXMOX_TOKEN_SECRET=your-secret \
   --env PVE_READONLY=true \
-  proxmox -- node /absolute/path/to/dist/index.js
+  proxmox -- npx -y proxmox-mcp-server
 ```
 
 Place an option (here `--transport`) between the last `--env` and the server name,
@@ -203,8 +215,8 @@ A project `.mcp.json` looks like:
   "mcpServers": {
     "proxmox": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "proxmox-mcp-server"],
       "env": {
         "PROXMOX_HOST": "https://pve.local:8006",
         "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
@@ -222,22 +234,21 @@ Add to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.proxmox]
-command = "node"
-args = ["/absolute/path/to/dist/index.js"]
+command = "npx"
+args = ["-y", "proxmox-mcp-server"]
 env = { PROXMOX_HOST = "https://pve.local:8006", PROXMOX_TOKEN_ID = "mcp@pve!mcp", PROXMOX_TOKEN_SECRET = "your-secret", PVE_READONLY = "true" }
 ```
 
 ### Cursor
 
-`~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project), same shape as the
-Claude Desktop config:
+`~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (per project):
 
 ```json
 {
   "mcpServers": {
     "proxmox": {
-      "command": "node",
-      "args": ["/absolute/path/to/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "proxmox-mcp-server"],
       "env": {
         "PROXMOX_HOST": "https://pve.local:8006",
         "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
@@ -258,8 +269,8 @@ Claude Desktop config:
   "servers": {
     "proxmox": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "proxmox-mcp-server"],
       "env": {
         "PROXMOX_HOST": "https://pve.local:8006",
         "PROXMOX_TOKEN_ID": "mcp@pve!mcp",
@@ -273,8 +284,8 @@ Claude Desktop config:
 
 ### Other clients (Windsurf, Cline, Zed, …)
 
-These read the same `mcpServers` JSON object as Claude Desktop and Cursor. Point the
-`command`/`args`/`env` at `node /absolute/path/to/dist/index.js`.
+These read the same `mcpServers` JSON object as Claude Desktop and Cursor. Point
+`command` at `npx` with `args` `["-y", "proxmox-mcp-server"]`.
 
 ## Tools
 
