@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { guardTarget, nodeField, settleTask } from './helpers.js';
+import { requireMinVersion } from '../proxmox/version.js';
 export function registerStorageTools(reg) {
     reg.register({
         name: 'pve_list_storage',
@@ -49,6 +50,9 @@ export function registerStorageTools(reg) {
         write: true,
     }, async (args, ctx) => {
         guardTarget(ctx, args.node);
+        // The download-url endpoint only exists from PVE 7.2; gate it so older nodes
+        // get a clear message instead of a bare 404.
+        await requireMinVersion(ctx.client, [7, 2], 'pve_download_iso');
         const data = await ctx.client.post(`/nodes/${args.node}/storage/${args.storage}/download-url`, {
             params: {
                 content: args.content,
