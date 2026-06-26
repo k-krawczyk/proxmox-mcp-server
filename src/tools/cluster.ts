@@ -1,9 +1,22 @@
 import { z } from 'zod';
 import type { ToolRegistry } from './registry.js';
 import { guardTarget, nodeField } from './helpers.js';
+import { getVersion } from '../proxmox/version.js';
 import type { PveClusterResource, PveNode, PveTask } from '../proxmox/types.js';
 
 export function registerClusterTools(reg: ToolRegistry): void {
+  reg.register(
+    {
+      name: 'pve_version',
+      title: 'API version',
+      description:
+        'Proxmox VE version of the connected node (version, release, repository id). Tells you ' +
+        'which version-gated features are available.',
+      annotations: { readOnlyHint: true },
+    },
+    (_args, ctx) => getVersion(ctx.client),
+  );
+
   reg.register(
     {
       name: 'pve_list_nodes',

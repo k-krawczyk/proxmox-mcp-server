@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "proxmox-mcp-server",
   "display_name": "Proxmox VE",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Manage Proxmox VE (VMs, containers, snapshots, storage, backups) over MCP.",
   "author": {
     "name": "Karol Krawczyk",
